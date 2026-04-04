@@ -16,6 +16,9 @@ struct CameraControls {
     float yaw = glm::half_pi<float>();
     float pitch = 0.0f;
     float radius = 10.0f;
+    bool rotating = false;
+    double lastCursorX = 0.0;
+    double lastCursorY = 0.0;
 };
 
 void scrollCallback(GLFWwindow* window, double /*xoffset*/, double yoffset) {
@@ -25,6 +28,38 @@ void scrollCallback(GLFWwindow* window, double /*xoffset*/, double yoffset) {
     }
 
     controls->radius = std::clamp(controls->radius - static_cast<float>(yoffset) * 0.8f, 2.0f, 40.0f);
+}
+
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int /*mods*/) {
+    auto* controls = static_cast<CameraControls*>(glfwGetWindowUserPointer(window));
+    if (!controls || button != GLFW_MOUSE_BUTTON_LEFT) {
+        return;
+    }
+
+    if (action == GLFW_PRESS) {
+        glfwGetCursorPos(window, &controls->lastCursorX, &controls->lastCursorY);
+        controls->rotating = true;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    } else if (action == GLFW_RELEASE) {
+        controls->rotating = false;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+}
+
+void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
+    auto* controls = static_cast<CameraControls*>(glfwGetWindowUserPointer(window));
+    if (!controls || !controls->rotating) {
+        return;
+    }
+
+    const double dx = controls->lastCursorX - xpos;
+    const double dy = controls->lastCursorY - ypos;
+    controls->lastCursorX = xpos;
+    controls->lastCursorY = ypos;
+
+    const float sensitivity = 0.005f;
+    controls->yaw += static_cast<float>(dx) * sensitivity;
+    controls->pitch -= static_cast<float>(dy) * sensitivity;
 }
 
 } // namespace
@@ -61,6 +96,8 @@ int main() {
     CameraControls cameraControls{};
     glfwSetWindowUserPointer(window, &cameraControls);
     glfwSetScrollCallback(window, scrollCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
+    glfwSetCursorPosCallback(window, cursorPosCallback);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
