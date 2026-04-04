@@ -47,14 +47,7 @@ void legendre(std::ostringstream& shader, int m, int l) {
     shader << "    legendre *= pow(1.0f - cosTheta * cosTheta, " << (m / 2) << ");\n";
 }
 
-std::string generatePsi(int n, int l, int m) {
-    return R"(float psi(vec3 p)
-{
-    float r = length(p);
-    return 0.5 * p.z * exp(-0.5 * r);
-}
-)";
-    
+std::string generatePsi(int n, int l, int m) {    
     if (!(0 <= l && l < n && -l <= m && m <= l)) {
         throw std::runtime_error("Invalid quantum numbers.");
     }
@@ -84,7 +77,7 @@ float psi(vec3 p)
     laguerre(shader, 2 * l + 1, n - l - 1);
     legendre(shader, m, l);
 
-    shader << "    return c * et * fa * laguerre * legendre;\n}\n";
+    shader << "    return c * et * fa * laguerre * legendre;\n}";
 
     return shader.str();
 }

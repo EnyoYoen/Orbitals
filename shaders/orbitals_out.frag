@@ -7,19 +7,41 @@ uniform float uRadius;
 uniform float uFovY;
 out vec4 FragColor;
 
-const int MAX_STEPS = 256;
-const float MARCH_SIZE = 0.01f;
-const float ATTENUATION = 1.2;
-const vec3 bmin = vec3(-5.0);
-const vec3 bmax = vec3(5.0);
+const int MAX_STEPS = 1024;
+const float ATTENUATION = 20.0;
+const vec3 bmin = vec3(-10.0);
+const vec3 bmax = vec3(10.0);
 
 // ===== GENERATED PSI FUNCTION =====
+
 float psi(vec3 p)
 {
     float r = length(p);
-    return 0.5 * p.z * exp(-0.5 * r);
-}
- 
+    if (r < 1e-5) {
+        return 0.0;
+    }
+    float cosTheta = p.z / r;
+    float theta = acos(p.z / r);
+    float phi = atan(p.y, p.x);
+
+        const int n = 2;
+    const int l = 1;
+    const int m = 0;
+
+    float et = exp(-r / n);
+    float fa = pow(r, l);
+    float c = 0.199471;
+    float laguerre = 0;
+    float x = 1.0f;
+    laguerre += x * (1);
+    x *= r;
+    float legendre = 0;
+    x = cosTheta;
+    legendre += x * (1);
+    x *= r;
+    legendre *= pow(1.0f - cosTheta * cosTheta, 0);
+    return c * et * fa * laguerre * legendre;
+} 
 // ===================================
 
 bool intersectBox(vec3 ro, vec3 rd, out float tmin, out float tmax)
@@ -45,6 +67,7 @@ vec4 raymarch(vec3 ro, vec3 rd) {
     }
 
     float t = max(t0, 0.0);
+    float dt = (t1 - t0) / float(MAX_STEPS);
 
     vec3 color = vec3(0.0);
     float alpha = 0.0;
@@ -56,7 +79,7 @@ vec4 raymarch(vec3 ro, vec3 rd) {
         float w = psi(p);
         float density = w * w;
 
-        float localAlpha = 1.0 - exp(-density * ATTENUATION);
+        float localAlpha = 1.0 - exp(-density * ATTENUATION * dt);
         //float localAlpha = density * 0.08;
         //localAlpha = clamp(localAlpha, 0.0, 0.2);
 
@@ -70,7 +93,7 @@ vec4 raymarch(vec3 ro, vec3 rd) {
         if(alpha > 0.99)
             break;
 
-        t += MARCH_SIZE;
+        t += dt;
     }
 
     return vec4(color, alpha);
