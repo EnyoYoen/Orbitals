@@ -89,8 +89,15 @@ float psi(vec3 p)
     return shader.str();
 }
 
-std::string generateShader(std::filesystem::path start, std::filesystem::path end, int n, int l, int m) {
-    std::string shader = ogl::loadTextFile(start) + generatePsi(n, l, m) + ogl::loadTextFile(end);
+std::string generateShader(std::filesystem::path templateFile, int n, int l, int m) {
+    std::string shader = ogl::loadTextFile(templateFile);
+    std::string psi = generatePsi(n, l, m);
+    
+    size_t pos = shader.find("float psi(vec3 p) { return 0.0; }");
+    if (pos != std::string::npos) {
+        shader.replace(pos, std::string("float psi(vec3 p) { return 0.0; }").length(), psi);
+    }
+    
     return shader;
 }
 

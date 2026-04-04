@@ -1,10 +1,26 @@
+#version 330 core
 
+uniform vec2 uResolution;
+uniform float uYaw;
+uniform float uPitch;
+uniform float uRadius;
+uniform float uFovY;
+out vec4 FragColor;
 
 const int MAX_STEPS = 256;
 const float MARCH_SIZE = 0.01f;
 const float ATTENUATION = 1.2;
 const vec3 bmin = vec3(-5.0);
 const vec3 bmax = vec3(5.0);
+
+// ===== GENERATED PSI FUNCTION =====
+float psi(vec3 p)
+{
+    float r = length(p);
+    return 0.5 * p.z * exp(-0.5 * r);
+}
+ 
+// ===================================
 
 bool intersectBox(vec3 ro, vec3 rd, out float tmin, out float tmax)
 {

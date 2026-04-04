@@ -93,10 +93,7 @@ add_custom_command(TARGET orbitals POST_BUILD
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/orbitals.vert"
     "$<TARGET_FILE_DIR:orbitals>/shaders/orbitals.vert"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/orbitals_start.frag"
-    "$<TARGET_FILE_DIR:orbitals>/shaders/orbitals_start.frag"
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/orbitals_end.frag"
-    "$<TARGET_FILE_DIR:orbitals>/shaders/orbitals_end.frag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/orbitals_template.frag"
+    "$<TARGET_FILE_DIR:orbitals>/shaders/orbitals_template.frag"
   COMMENT "Copying shader files next to executable"
 )

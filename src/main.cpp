@@ -109,10 +109,10 @@ int main() {
     glEnableVertexAttribArray(0);
 
     const std::filesystem::path shaderDir = std::filesystem::current_path() / "shaders";
-    const std::string& fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_start.frag", shaderDir / "orbitals_end.frag", 2, 1, 0);
+    const std::string& fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", 2, 1, 0);
 
     {
-        std::ofstream generated(shaderDir / "orbitals.frag", std::ios::out | std::ios::trunc);
+        std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);
         if (!generated) {
             std::cerr << "Cannot create " << (shaderDir / "orbitals.frag").string() << "\n";
             glfwDestroyWindow(window);
