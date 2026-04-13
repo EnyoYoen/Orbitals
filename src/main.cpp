@@ -12,10 +12,9 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include "Icon.hpp"
 #include "OpenGL.hpp"
 #include "ShaderGen.hpp"
-
-namespace {
 
 bool gUiCapturesMouse = false;
 
@@ -34,7 +33,7 @@ void scrollCallback(GLFWwindow* window, double /*xoffset*/, double yoffset) {
         return;
     }
 
-    controls->radius = std::clamp(controls->radius - static_cast<float>(yoffset) * 0.8f, 2.0f, 100.0f);
+    controls->radius = std::clamp(controls->radius - static_cast<float>(yoffset) * 4.0f, 2.0f, 300.0f);
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int /*mods*/) {
@@ -73,9 +72,7 @@ void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     controls->pitch -= static_cast<float>(dy) * sensitivity;
 }
 
-} // namespace
-
-int main() {
+int main(int argc, char** argv) {
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW\n";
         return EXIT_FAILURE;
@@ -101,6 +98,8 @@ int main() {
         glfwTerminate();
         return EXIT_FAILURE;
     }
+
+    orbitals::icon::setWindowIconFromPng(window, argc, argv);
 
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, orbitals::ogl::framebufferSizeCallback);

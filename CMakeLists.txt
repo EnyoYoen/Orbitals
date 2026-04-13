@@ -43,7 +43,13 @@ FetchContent_Declare(
   GIT_TAG v1.91.9b
 )
 
-FetchContent_MakeAvailable(glfw glm imgui)
+FetchContent_Declare(
+  stb
+  GIT_REPOSITORY https://github.com/nothings/stb.git
+  GIT_TAG master
+)
+
+FetchContent_MakeAvailable(glfw glm imgui stb)
 
 FetchContent_GetProperties(glew)
 if(NOT glew_POPULATED)
@@ -96,6 +102,7 @@ if(MSVC)
 endif()
 
 add_executable(orbitals
+  src/Icon.cpp
   src/main.cpp
 )
 
@@ -107,6 +114,7 @@ endif()
 
 target_include_directories(orbitals PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${stb_SOURCE_DIR}
 )
 
 target_link_libraries(orbitals PRIVATE
@@ -129,11 +137,15 @@ endif()
 
 add_custom_command(TARGET orbitals POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:orbitals>/shaders"
+  COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:orbitals>/images"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/orbitals.vert"
     "$<TARGET_FILE_DIR:orbitals>/shaders/orbitals.vert"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/orbitals_template.frag"
     "$<TARGET_FILE_DIR:orbitals>/shaders/orbitals_template.frag"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_CURRENT_SOURCE_DIR}/images/icon.png"
+    "$<TARGET_FILE_DIR:orbitals>/images/icon.png"
   COMMENT "Copying shader files next to executable"
 )
