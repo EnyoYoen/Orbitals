@@ -7,7 +7,7 @@
 ![Orbitals 3](images/3.png)
 ![Orbitals 4](images/4.png)
 
-Orbitals generates a fragment shader from quantum numbers, renders the result with OpenGL, and lets you rotate the view in a small ImGui-based UI.
+Orbitals generates a fragment shader from quantum numbers, renders the result with OpenGL by raymarching, and lets you rotate the view in a small ImGui-based UI.
 
 ## Requirements
 
