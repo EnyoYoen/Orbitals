@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
+
+if(MSVC)
+  set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "" FORCE)
+endif()
+
 project(Orbitals LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)

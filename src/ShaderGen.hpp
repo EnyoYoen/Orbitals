@@ -14,7 +14,7 @@
 namespace orbitals::gen {
 
 double factorial(size_t n) {
-    return glm::factorial<size_t>(n);
+    return (double)glm::factorial<size_t>(n);
 }
 
 double normalizationConstant(int n, int l, int m) {
