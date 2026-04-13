@@ -3,14 +3,21 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <string>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 #include "OpenGL.hpp"
 #include "ShaderGen.hpp"
 
 namespace {
+
+bool gUiCapturesMouse = false;
 
 struct CameraControls {
     float yaw = glm::half_pi<float>();
@@ -32,7 +39,11 @@ void scrollCallback(GLFWwindow* window, double /*xoffset*/, double yoffset) {
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int /*mods*/) {
     auto* controls = static_cast<CameraControls*>(glfwGetWindowUserPointer(window));
-    if (!controls || button != GLFW_MOUSE_BUTTON_LEFT) {
+    if (!controls || button != GLFW_MOUSE_BUTTON_LEFT || gUiCapturesMouse) {
+        if (controls && button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+            controls->rotating = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
         return;
     }
 
@@ -146,7 +157,12 @@ int main() {
     glEnableVertexAttribArray(0);
 
     const std::filesystem::path shaderDir = std::filesystem::current_path() / "shaders";
-    const std::string& fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", 2, 1, 1);
+    int quantumN = 4;
+    int quantumL = 2;
+    int quantumM = 1;
+    std::string lastShaderError;
+
+    std::string fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", quantumN, quantumL, quantumM);
 
 #ifdef DEBUG
     {
@@ -161,7 +177,7 @@ int main() {
     }
 #endif
 
-    const GLuint shaderProgram = orbitals::ogl::createShaderProgram(
+    GLuint shaderProgram = orbitals::ogl::createShaderProgram(
         shaderDir / "orbitals.vert",
         fragmentSource
     );
@@ -174,18 +190,70 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    const GLint resolutionLocation = glGetUniformLocation(shaderProgram, "uResolution");
-    const GLint yawLocation = glGetUniformLocation(shaderProgram, "uYaw");
-    const GLint pitchLocation = glGetUniformLocation(shaderProgram, "uPitch");
-    const GLint radiusLocation = glGetUniformLocation(shaderProgram, "uRadius");
-    const GLint fovLocation = glGetUniformLocation(shaderProgram, "uFovY");
+    GLint resolutionLocation = glGetUniformLocation(shaderProgram, "uResolution");
+    GLint yawLocation = glGetUniformLocation(shaderProgram, "uYaw");
+    GLint pitchLocation = glGetUniformLocation(shaderProgram, "uPitch");
+    GLint radiusLocation = glGetUniformLocation(shaderProgram, "uRadius");
+    GLint fovLocation = glGetUniformLocation(shaderProgram, "uFovY");
+
+    auto refreshUniformLocations = [&]() {
+        resolutionLocation = glGetUniformLocation(shaderProgram, "uResolution");
+        yawLocation = glGetUniformLocation(shaderProgram, "uYaw");
+        pitchLocation = glGetUniformLocation(shaderProgram, "uPitch");
+        radiusLocation = glGetUniformLocation(shaderProgram, "uRadius");
+        fovLocation = glGetUniformLocation(shaderProgram, "uFovY");
+    };
+
+    auto rebuildShader = [&]() {
+        try {
+            std::string nextSource = orbitals::gen::generateShader(
+                shaderDir / "orbitals_template.frag",
+                quantumN,
+                quantumL,
+                quantumM
+            );
+
+#ifdef DEBUG
+            {
+                std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);
+                if (generated) {
+                    generated << nextSource;
+                }
+            }
+#endif
+
+            const GLuint nextProgram = orbitals::ogl::createShaderProgram(shaderDir / "orbitals.vert", nextSource);
+            if (nextProgram != 0) {
+                glDeleteProgram(shaderProgram);
+                shaderProgram = nextProgram;
+                refreshUniformLocations();
+                lastShaderError.clear();
+            } else {
+                lastShaderError = "Shader compilation failed. See terminal output.";
+            }
+        } catch (const std::exception& ex) {
+            lastShaderError = ex.what();
+        }
+    };
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
 
     float lastTime = static_cast<float>(glfwGetTime());
 
     while (!glfwWindowShouldClose(window)) {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
         const float currentTime = static_cast<float>(glfwGetTime());
         const float dt = std::max(currentTime - lastTime, 0.0f);
         lastTime = currentTime;
+
+        gUiCapturesMouse = ImGui::GetIO().WantCaptureMouse;
 
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
             glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -207,6 +275,26 @@ int main() {
 
         const float maxPitch = glm::half_pi<float>() - 0.12f;
         cameraControls.pitch = std::clamp(cameraControls.pitch, -maxPitch, maxPitch);
+
+        bool dirtyQuantum = false;
+        ImGui::Begin("Quantum Numbers");
+        dirtyQuantum |= ImGui::SliderInt("n", &quantumN, 1, 8);
+
+        quantumL = std::clamp(quantumL, 0, quantumN - 1);
+        dirtyQuantum |= ImGui::SliderInt("l", &quantumL, 0, quantumN - 1);
+
+        quantumM = std::clamp(quantumM, -quantumL, quantumL);
+        dirtyQuantum |= ImGui::SliderInt("m", &quantumM, -quantumL, quantumL);
+
+        ImGui::Text("Current: n=%d, l=%d, m=%d", quantumN, quantumL, quantumM);
+        if (!lastShaderError.empty()) {
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", lastShaderError.c_str());
+        }
+        ImGui::End();
+
+        if (dirtyQuantum) {
+            rebuildShader();
+        }
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -234,9 +322,16 @@ int main() {
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glDeleteProgram(shaderProgram);
     glDeleteBuffers(1, &vbo);

@@ -37,7 +37,13 @@ FetchContent_Declare(
   GIT_TAG 1.0.1
 )
 
-FetchContent_MakeAvailable(glfw glm)
+FetchContent_Declare(
+  imgui
+  GIT_REPOSITORY https://github.com/ocornut/imgui.git
+  GIT_TAG v1.91.9b
+)
+
+FetchContent_MakeAvailable(glfw glm imgui)
 
 FetchContent_GetProperties(glew)
 if(NOT glew_POPULATED)
@@ -64,6 +70,31 @@ endif()
 
 find_package(OpenGL REQUIRED)
 
+add_library(imgui STATIC
+  ${imgui_SOURCE_DIR}/imgui.cpp
+  ${imgui_SOURCE_DIR}/imgui_draw.cpp
+  ${imgui_SOURCE_DIR}/imgui_tables.cpp
+  ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+)
+
+target_include_directories(imgui PUBLIC
+  ${imgui_SOURCE_DIR}
+  ${imgui_SOURCE_DIR}/backends
+)
+
+target_link_libraries(imgui PUBLIC
+  glfw
+  OpenGL::GL
+)
+
+if(MSVC)
+  set_target_properties(imgui PROPERTIES
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+  )
+endif()
+
 add_executable(orbitals
   src/main.cpp
 )
@@ -82,6 +113,7 @@ target_link_libraries(orbitals PRIVATE
   glfw
   glew
   glm::glm
+  imgui
   OpenGL::GL
 )
 
