@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 
+set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
+
+if(POLICY CMP0169)
+  cmake_policy(SET CMP0169 OLD)
+endif()
+
 if(MSVC)
   set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "" FORCE)
