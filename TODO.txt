@@ -1,2 +1,1 @@
-- Optimize psi generation (power with 0 or 1, do not multiply x when last iteration, ...)
 - Add sliders to change the quantum numbers dynamically

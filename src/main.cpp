@@ -146,8 +146,9 @@ int main() {
     glEnableVertexAttribArray(0);
 
     const std::filesystem::path shaderDir = std::filesystem::current_path() / "shaders";
-    const std::string& fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", 4, 3, 1);
+    const std::string& fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", 2, 1, 1);
 
+#ifdef DEBUG
     {
         std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);
         if (!generated) {
@@ -158,6 +159,7 @@ int main() {
         }
         generated << fragmentSource;
     }
+#endif
 
     const GLuint shaderProgram = orbitals::ogl::createShaderProgram(
         shaderDir / "orbitals.vert",
