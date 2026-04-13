@@ -18,9 +18,9 @@ double factorial(size_t n) {
 }
 
 double normalizationConstant(int n, int l, int m) {
-    double c = glm::sqrt((8.0f * factorial(n - l - 1)) / (factorial(n + l) * 2 * n * n * n * n));
-    c *= glm::pow(2 / n, l);
-    c *= glm::sqrt((2*l + 1) * factorial(l - m) / (4 * glm::quarter_pi<double>() * factorial(l + m)));
+    double c = sqrt(pow(2.0/n, 3) * factorial(n-l-1) / (2.0 * n * factorial(n+l)));
+    c *= glm::pow(2.0 / n, l);
+    c *= glm::sqrt((2*l + 1) * factorial(l - m) / (4 * glm::pi<double>() * factorial(l + m)));
     return c;
 }
 
@@ -42,12 +42,12 @@ void legendre(std::ostringstream& shader, int m, int l) {
         shader << "    legendre += x * (" << (
             (k % 2 == 0 ? 1 : -1) * factorial(2 * l - 2 * k) / (factorial(l - m - 2 * k) * factorial(l - k) * factorial(k) * glm::pow<double, double>(2, l))
         ) << ");\n";
-        shader << "    x *= r;\n";
+        shader << "    x *= cosTheta * cosTheta;\n";
     }
     shader << "    legendre *= pow(1.0f - cosTheta * cosTheta, " << (m / 2) << ");\n";
 }
 
-std::string generatePsi(int n, int l, int m) {    
+std::string generatePsi(int n, int l, int m) {
     if (!(0 <= l && l < n && -l <= m && m <= l)) {
         throw std::runtime_error("Invalid quantum numbers.");
     }
@@ -64,7 +64,7 @@ float psi(vec3 p)
     float theta = acos(p.z / r);
     float phi = atan(p.y, p.x);
 
-    )");
+)");
 
     shader << "    const int n = " << n << ";\n";
     shader << "    const int l = " << l << ";\n";

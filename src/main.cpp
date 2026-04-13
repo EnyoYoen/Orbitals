@@ -15,7 +15,7 @@ namespace {
 struct CameraControls {
     float yaw = glm::half_pi<float>();
     float pitch = 0.0f;
-    float radius = 10.0f;
+    float radius = 50.0f;
     bool rotating = false;
     double lastCursorX = 0.0;
     double lastCursorY = 0.0;
@@ -27,7 +27,7 @@ void scrollCallback(GLFWwindow* window, double /*xoffset*/, double yoffset) {
         return;
     }
 
-    controls->radius = std::clamp(controls->radius - static_cast<float>(yoffset) * 0.8f, 2.0f, 40.0f);
+    controls->radius = std::clamp(controls->radius - static_cast<float>(yoffset) * 0.8f, 2.0f, 100.0f);
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int /*mods*/) {
@@ -146,7 +146,7 @@ int main() {
     glEnableVertexAttribArray(0);
 
     const std::filesystem::path shaderDir = std::filesystem::current_path() / "shaders";
-    const std::string& fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", 2, 1, 0);
+    const std::string& fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", 3, 2, 0);
 
     {
         std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);

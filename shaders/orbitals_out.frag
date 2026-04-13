@@ -8,9 +8,9 @@ uniform float uFovY;
 out vec4 FragColor;
 
 const int MAX_STEPS = 1024;
-const float ATTENUATION = 20.0;
-const vec3 bmin = vec3(-10.0);
-const vec3 bmax = vec3(10.0);
+const float ATTENUATION = 1000.0;
+const vec3 bmin = vec3(-20.0);
+const vec3 bmax = vec3(20.0);
 
 // ===== GENERATED PSI FUNCTION =====
 
@@ -24,21 +24,23 @@ float psi(vec3 p)
     float theta = acos(p.z / r);
     float phi = atan(p.y, p.x);
 
-        const int n = 2;
-    const int l = 1;
+    const int n = 3;
+    const int l = 2;
     const int m = 0;
 
     float et = exp(-r / n);
     float fa = pow(r, l);
-    float c = 0.199471;
+    float c = 0.00568715;
     float laguerre = 0;
     float x = 1.0f;
     laguerre += x * (1);
     x *= r;
     float legendre = 0;
-    x = cosTheta;
-    legendre += x * (1);
-    x *= r;
+    x = 1.0f;
+    legendre += x * (-0.5);
+    x *= cosTheta * cosTheta;
+    legendre += x * (1.5);
+    x *= cosTheta * cosTheta;
     legendre *= pow(1.0f - cosTheta * cosTheta, 0);
     return c * et * fa * laguerre * legendre;
 } 
