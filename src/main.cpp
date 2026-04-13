@@ -18,6 +18,12 @@
 
 bool gUiCapturesMouse = false;
 
+enum class SimulationMode {
+    Normal = 0,
+    Molecular = 1,
+    Timed = 2
+};
+
 struct CameraControls {
     float yaw = glm::half_pi<float>();
     float pitch = glm::half_pi<float>();
@@ -160,16 +166,49 @@ int main(int argc, char** argv) {
     int quantumL = 2;
     int quantumM = 1;
     std::string lastShaderError;
-    
-    bool isMolecularMode = false;
-    int quantumN2 = 4;
+
+    SimulationMode simulationMode = SimulationMode::Normal;
+    int quantumN2 = 5;
     int quantumL2 = 2;
     int quantumM2 = 1;
     double molecularDistance = 10.0;
 
-    std::string fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", quantumN, quantumL, quantumM);
+    auto generateFragmentSource = [&]() {
+        if (simulationMode == SimulationMode::Molecular) {
+            return orbitals::gen::generateMolecularShader(
+                shaderDir / "orbitals_template.frag",
+                quantumN,
+                quantumL,
+                quantumM,
+                quantumN2,
+                quantumL2,
+                quantumM2,
+                molecularDistance
+            );
+        }
+        if (simulationMode == SimulationMode::Timed) {
+            return orbitals::gen::generateTimeShader(
+                shaderDir / "orbitals_time_template.frag",
+                quantumN,
+                quantumL,
+                quantumM,
+                quantumN2,
+                quantumL2,
+                quantumM2
+            );
+        }
 
-#ifdef DEBUG
+        return orbitals::gen::generateShader(
+            shaderDir / "orbitals_template.frag",
+            quantumN,
+            quantumL,
+            quantumM
+        );
+    };
+
+    std::string fragmentSource = generateFragmentSource();
+
+#ifndef DEBUG
     {
         std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);
         if (!generated) {
@@ -200,6 +239,7 @@ int main(int argc, char** argv) {
     GLint pitchLocation = glGetUniformLocation(shaderProgram, "uPitch");
     GLint radiusLocation = glGetUniformLocation(shaderProgram, "uRadius");
     GLint fovLocation = glGetUniformLocation(shaderProgram, "uFovY");
+    GLint timeLocation = glGetUniformLocation(shaderProgram, "uTime");
 
     auto refreshUniformLocations = [&]() {
         resolutionLocation = glGetUniformLocation(shaderProgram, "uResolution");
@@ -207,32 +247,14 @@ int main(int argc, char** argv) {
         pitchLocation = glGetUniformLocation(shaderProgram, "uPitch");
         radiusLocation = glGetUniformLocation(shaderProgram, "uRadius");
         fovLocation = glGetUniformLocation(shaderProgram, "uFovY");
+        timeLocation = glGetUniformLocation(shaderProgram, "uTime");
     };
 
     auto rebuildShader = [&]() {
         try {
-            std::string nextSource;
-            if (isMolecularMode) {
-                nextSource = orbitals::gen::generateMolecularShader(
-                    shaderDir / "orbitals_template.frag",
-                    quantumN,
-                    quantumL,
-                    quantumM,
-                    quantumN2,
-                    quantumL2,
-                    quantumM2,
-                    molecularDistance
-                );
-            } else {
-                nextSource = orbitals::gen::generateShader(
-                    shaderDir / "orbitals_template.frag",
-                    quantumN,
-                    quantumL,
-                    quantumM
-                );
-            }
+            std::string nextSource = generateFragmentSource();
 
-#ifdef DEBUG
+#ifndef DEBUG
             {
                 std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);
                 if (generated) {
@@ -297,11 +319,13 @@ int main(int argc, char** argv) {
 
         bool dirtyQuantum = false;
         ImGui::Begin("Quantum Numbers");
-        
-        if (ImGui::Checkbox("Molecular Mode", &isMolecularMode)) {
+
+        static int selectedSimulation = static_cast<int>(simulationMode);
+        if (ImGui::Combo("Simulation", &selectedSimulation, "Normal\0Molecular\0Timed\0")) {
+            simulationMode = static_cast<SimulationMode>(selectedSimulation);
             dirtyQuantum = true;
         }
-        
+
         ImGui::Text("Orbital 1:");
         dirtyQuantum |= ImGui::SliderInt("n##1", &quantumN, 1, 8);
 
@@ -312,25 +336,27 @@ int main(int argc, char** argv) {
         dirtyQuantum |= ImGui::SliderInt("m##1", &quantumM, -quantumL, quantumL);
 
         ImGui::Text("Current: n=%d, l=%d, m=%d", quantumN, quantumL, quantumM);
-        
-        if (isMolecularMode) {
+
+        if (simulationMode != SimulationMode::Normal) {
             ImGui::Separator();
             ImGui::Text("Orbital 2:");
             dirtyQuantum |= ImGui::SliderInt("n##2", &quantumN2, 1, 8);
-            
+
             quantumL2 = std::clamp(quantumL2, 0, quantumN2 - 1);
             dirtyQuantum |= ImGui::SliderInt("l##2", &quantumL2, 0, quantumN2 - 1);
-            
+
             quantumM2 = std::clamp(quantumM2, -quantumL2, quantumL2);
             dirtyQuantum |= ImGui::SliderInt("m##2", &quantumM2, -quantumL2, quantumL2);
-            
+
             ImGui::Text("Current: n=%d, l=%d, m=%d", quantumN2, quantumL2, quantumM2);
-            
-            double distMin = 10.0;
-            double distMax = 75.0;
-            dirtyQuantum |= ImGui::SliderScalar("Distance##mol", ImGuiDataType_Double, &molecularDistance, &distMin, &distMax, "%.2f");
+
+            if (simulationMode == SimulationMode::Molecular) {
+                double distMin = 10.0;
+                double distMax = 75.0;
+                dirtyQuantum |= ImGui::SliderScalar("Distance##mol", ImGuiDataType_Double, &molecularDistance, &distMin, &distMax, "%.2f");
+            }
         }
-        
+
         if (!lastShaderError.empty()) {
             ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", lastShaderError.c_str());
         }
@@ -362,6 +388,9 @@ int main(int argc, char** argv) {
         }
         if (fovLocation >= 0) {
             glUniform1f(fovLocation, glm::degrees(glm::quarter_pi<float>()));
+        }
+        if (timeLocation >= 0) {
+            glUniform1f(timeLocation, currentTime);
         }
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);

@@ -154,4 +154,30 @@ std::string generateMolecularShader(std::filesystem::path templateFile, int n1, 
     return shader;
 }
 
+std::string generateTimeShader(std::filesystem::path templateFile, int n1, int l1, int m1, int n2, int l2, int m2) {
+    std::string shader = ogl::loadTextFile(templateFile);
+    std::string psi1 = generatePsi(n1, l1, m1, 1);
+    std::string psi2 = generatePsi(n2, l2, m2, 2);
+
+    std::string combinedPsi = psi1 + "\n\n" + psi2 + "\n\n" +
+        "vec2 psi(vec3 p)\n"
+        "{\n"
+        "    float t = uTime * 5.0;\n"
+        "    float E1 = energy(" + std::to_string(n1) + ");\n"
+        "    float E2 = energy(" + std::to_string(n2) + ");\n"
+        "    vec2 a = vec2(psi1(p), 0.0);\n"
+        "    vec2 b = vec2(psi2(p), 0.0);\n"
+        "    a = complex_mul(a, phase(E1, t));\n"
+        "    b = complex_mul(b, phase(E2, t));\n"
+        "    return a + b;\n"
+        "}";
+    
+    size_t pos = shader.find("vec2 psi(vec3 p) { return vec2(0.0); }");
+    if (pos != std::string::npos) {
+        shader.replace(pos, std::string("vec2 psi(vec3 p) { return vec2(0.0); }").length(), combinedPsi);
+    }
+    
+    return shader;
+}
+
 } // namespace orbitals::gen
