@@ -28,10 +28,20 @@ void laguerre(std::ostringstream& shader, int alpha, int n) {
     shader << "    float laguerre = 0;\n";
     shader << "    float x = 1.0f;\n";
     for (int k = 0 ; k <= n ; k++) {
-        shader << "    laguerre += x * (" << (
-            (k % 2 == 0 ? 1 : -1) * factorial(n + alpha + 1) / (factorial(alpha + k + 1) * factorial(n - k) * factorial(k))
-        ) << ");\n";
-        shader << "    x *= r;\n";
+        double coeff = (k % 2 == 0 ? 1 : -1) * factorial(n + alpha + 1) / (factorial(alpha + k + 1) * factorial(n - k) * factorial(k));
+        if (coeff == 0) {
+            continue;
+        } else if (coeff == 1) {
+            shader << "    laguerre += x;\n";
+        } else if (coeff == -1) {
+            shader << "    laguerre -= x;\n";
+        } else {
+            shader << "    laguerre += x * (" << coeff << ");\n";
+        }
+        
+        if (k < n) {
+            shader << "    x *= r;\n";
+        }
     }
 }
 
@@ -39,12 +49,32 @@ void legendre(std::ostringstream& shader, int m, int l) {
     shader << "    float legendre = 0;\n";
     shader << "    x = " << (2 * floor((l-m)/2) == l - m ? "1.0f" : "cosTheta") << ";\n";
     for (int k = static_cast<int>(floor((l - m) / 2.0)) ; k >= 0 ; --k) {
-        shader << "    legendre += x * (" << (
-            (k % 2 == 0 ? 1 : -1) * factorial(2 * l - 2 * k) / (factorial(l - m - 2 * k) * factorial(l - k) * factorial(k) * glm::pow<double, double>(2, l))
-        ) << ");\n";
-        shader << "    x *= cosTheta * cosTheta;\n";
+        double coeff = (k % 2 == 0 ? 1 : -1) * factorial(2 * l - 2 * k) / (factorial(l - m - 2 * k) * factorial(l - k) * factorial(k) * glm::pow<double, double>(2, l));
+        if (coeff == 0) {
+            continue;
+        } else if (coeff == 1) {
+            shader << "    legendre += x;\n";
+        } else if (coeff == -1) {
+            shader << "    legendre -= x;\n";
+        } else {
+            shader << "    legendre += x * (" << coeff << ");\n";
+        }
+        
+        if (k > 0) {
+            shader << "    x *= cosTheta * cosTheta;\n";
+        }
     }
-    shader << "    legendre *= pow(1.0f - cosTheta * cosTheta, " << (m / 2) << ")"  << (m % 2 == 1 ? " * sinTheta" : "") << ";\n";
+    if (m > 0) {
+        if (m / 2 == 1) {
+            shader << "    legendre *= (1.0f - cosTheta * cosTheta);\n";
+        } else if (m / 2 > 1) {
+            shader << "    legendre *= pow(1.0f - cosTheta * cosTheta, " << (m / 2) << ");\n";
+        }
+        
+        if (m % 2 == 1) {
+            shader << "    legendre *= sinTheta;\n";
+        }
+    }
 }
 
 std::string generatePsi(int n, int l, int m) {
@@ -72,7 +102,13 @@ float psi(vec3 p)
     shader << "    const int m = " << m << ";\n\n";
 
     shader << "    float et = exp(-r / n);\n";
-    shader << "    float fa = pow(r, l);\n";
+    if (l == 0) {
+        shader << "    float fa = 1.0f;\n";
+    } else if (l == 1) {
+        shader << "    float fa = r;\n";
+    } else {
+        shader << "    float fa = pow(r, l);\n";
+    }
     shader << "    float c = " << normalizationConstant(n, l, m) << ";\n";
 
     laguerre(shader, 2 * l + 1, n - l - 1);
