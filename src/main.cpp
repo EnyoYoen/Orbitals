@@ -14,8 +14,8 @@ namespace {
 
 struct CameraControls {
     float yaw = glm::half_pi<float>();
-    float pitch = 0.0f;
-    float radius = 50.0f;
+    float pitch = glm::half_pi<float>();
+    float radius = 75.0f;
     bool rotating = false;
     double lastCursorX = 0.0;
     double lastCursorY = 0.0;
@@ -146,7 +146,7 @@ int main() {
     glEnableVertexAttribArray(0);
 
     const std::filesystem::path shaderDir = std::filesystem::current_path() / "shaders";
-    const std::string& fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", 3, 2, 0);
+    const std::string& fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", 4, 3, 1);
 
     {
         std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);

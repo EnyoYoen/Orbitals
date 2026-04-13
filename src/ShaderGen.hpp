@@ -44,7 +44,7 @@ void legendre(std::ostringstream& shader, int m, int l) {
         ) << ");\n";
         shader << "    x *= cosTheta * cosTheta;\n";
     }
-    shader << "    legendre *= pow(1.0f - cosTheta * cosTheta, " << (m / 2) << ");\n";
+    shader << "    legendre *= pow(1.0f - cosTheta * cosTheta, " << (m / 2) << ")"  << (m % 2 == 1 ? " * sinTheta" : "") << ";\n";
 }
 
 std::string generatePsi(int n, int l, int m) {
@@ -61,6 +61,7 @@ float psi(vec3 p)
         return 0.0;
     }
     float cosTheta = p.z / r;
+    float sinTheta = p.x / r;
     float theta = acos(p.z / r);
     float phi = atan(p.y, p.x);
 

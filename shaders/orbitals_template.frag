@@ -9,8 +9,8 @@ out vec4 FragColor;
 
 const int MAX_STEPS = 1024;
 const float ATTENUATION = 1000.0;
-const vec3 bmin = vec3(-20.0);
-const vec3 bmax = vec3(20.0);
+const vec3 bmin = vec3(-30.0);
+const vec3 bmax = vec3(30.0);
 
 // ===== GENERATED PSI FUNCTION =====
 float psi(vec3 p) { return 0.0; } 
