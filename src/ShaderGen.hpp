@@ -162,7 +162,7 @@ std::string generateTimeShader(std::filesystem::path templateFile, int n1, int l
     std::string combinedPsi = psi1 + "\n\n" + psi2 + "\n\n" +
         "vec2 psi(vec3 p)\n"
         "{\n"
-        "    float t = uTime * 5.0;\n"
+        "    float t = uTime * 10.0;\n"
         "    float E1 = energy(" + std::to_string(n1) + ");\n"
         "    float E2 = energy(" + std::to_string(n2) + ");\n"
         "    vec2 a = vec2(psi1(p), 0.0);\n"
