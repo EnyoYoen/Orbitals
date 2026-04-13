@@ -22,7 +22,7 @@ bool gUiCapturesMouse = false;
 struct CameraControls {
     float yaw = glm::half_pi<float>();
     float pitch = glm::half_pi<float>();
-    float radius = 75.0f;
+    float radius = 200.0f;
     bool rotating = false;
     double lastCursorX = 0.0;
     double lastCursorY = 0.0;
@@ -164,7 +164,7 @@ int main() {
 
     std::string fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", quantumN, quantumL, quantumM);
 
-#ifdef DEBUG
+#ifndef DEBUG
     {
         std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);
         if (!generated) {

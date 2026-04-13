@@ -18,15 +18,16 @@ double factorial(size_t n) {
 }
 
 double normalizationConstant(int n, int l, int m) {
-    double c = sqrt(pow(2.0/n, 3) * factorial(n-l-1) / (2.0 * n * factorial(n+l)));
+    double c = glm::sqrt(pow(2.0/n, 3) * factorial(n-l-1) / (2.0 * n * factorial(n+l)));
     c *= glm::pow(2.0 / n, l);
     c *= glm::sqrt((2*l + 1) * factorial(l - m) / (4 * glm::pi<double>() * factorial(l + m)));
     return c;
 }
 
-void laguerre(std::ostringstream& shader, int alpha, int n) {
+void laguerre(std::ostringstream& shader, int alpha, int n, int N) {
     shader << "    float laguerre = 0;\n";
     shader << "    float x = 1.0f;\n";
+    shader << "    float f = " << (2.0 / (double)N) << ";\n";
     for (int k = 0 ; k <= n ; k++) {
         double coeff = (k % 2 == 0 ? 1 : -1) * factorial(n + alpha + 1) / (factorial(alpha + k + 1) * factorial(n - k) * factorial(k));
         if (coeff == 0) {
@@ -40,7 +41,7 @@ void laguerre(std::ostringstream& shader, int alpha, int n) {
         }
         
         if (k < n) {
-            shader << "    x *= r;\n";
+            shader << "    x *= r * f;\n";
         }
     }
 }
@@ -111,7 +112,7 @@ float psi(vec3 p)
     }
     shader << "    float c = " << normalizationConstant(n, l, m) << ";\n";
 
-    laguerre(shader, 2 * l + 1, n - l - 1);
+    laguerre(shader, 2 * l + 1, n - l - 1, n);
     legendre(shader, m, l);
 
     shader << "    return c * et * fa * laguerre * legendre;\n}";
