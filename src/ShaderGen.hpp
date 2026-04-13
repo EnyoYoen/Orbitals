@@ -78,14 +78,14 @@ void legendre(std::ostringstream& shader, int m, int l) {
     }
 }
 
-std::string generatePsi(int n, int l, int m) {
+std::string generatePsi(int n, int l, int m, int num = 0) {
     if (!(0 <= l && l < n && -l <= m && m <= l)) {
         throw std::runtime_error("Invalid quantum numbers.");
     }
 
     std::ostringstream shader;
+    shader << "float psi" << (num > 0 ? std::to_string(num) : "") << "(vec3 p)";
     shader << (R"(
-float psi(vec3 p)
 {
     float r = length(p);
     if (r < 1e-5) {
@@ -127,6 +127,28 @@ std::string generateShader(std::filesystem::path templateFile, int n, int l, int
     size_t pos = shader.find("float psi(vec3 p) { return 0.0; }");
     if (pos != std::string::npos) {
         shader.replace(pos, std::string("float psi(vec3 p) { return 0.0; }").length(), psi);
+    }
+    
+    return shader;
+}
+
+std::string generateMolecularShader(std::filesystem::path templateFile, int n1, int l1, int m1, int n2, int l2, int m2, double distance) {
+    std::string shader = ogl::loadTextFile(templateFile);
+    std::string psi1 = generatePsi(n1, l1, m1, 1);
+    std::string psi2 = generatePsi(n2, l2, m2, 2);
+
+    std::string combinedPsi = psi1 + "\n\n" + psi2 + "\n\n" +
+        "float psi(vec3 p)\n"
+        "{\n"
+        "    vec3 p1 = p + vec3(" + std::to_string(distance / 2.0) + ", 0.0, 0.0);\n"
+        "    vec3 p2 = p - vec3(" + std::to_string(distance / 2.0) + ", 0.0, 0.0);\n"
+        "    float combined = psi1(p1) + psi2(p2);\n"
+        "    return combined;\n"
+        "}";
+    
+    size_t pos = shader.find("float psi(vec3 p) { return 0.0; }");
+    if (pos != std::string::npos) {
+        shader.replace(pos, std::string("float psi(vec3 p) { return 0.0; }").length(), combinedPsi);
     }
     
     return shader;

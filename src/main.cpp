@@ -160,10 +160,16 @@ int main(int argc, char** argv) {
     int quantumL = 2;
     int quantumM = 1;
     std::string lastShaderError;
+    
+    bool isMolecularMode = false;
+    int quantumN2 = 4;
+    int quantumL2 = 2;
+    int quantumM2 = 1;
+    double molecularDistance = 10.0;
 
     std::string fragmentSource = orbitals::gen::generateShader(shaderDir / "orbitals_template.frag", quantumN, quantumL, quantumM);
 
-#ifndef DEBUG
+#ifdef DEBUG
     {
         std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);
         if (!generated) {
@@ -205,12 +211,26 @@ int main(int argc, char** argv) {
 
     auto rebuildShader = [&]() {
         try {
-            std::string nextSource = orbitals::gen::generateShader(
-                shaderDir / "orbitals_template.frag",
-                quantumN,
-                quantumL,
-                quantumM
-            );
+            std::string nextSource;
+            if (isMolecularMode) {
+                nextSource = orbitals::gen::generateMolecularShader(
+                    shaderDir / "orbitals_template.frag",
+                    quantumN,
+                    quantumL,
+                    quantumM,
+                    quantumN2,
+                    quantumL2,
+                    quantumM2,
+                    molecularDistance
+                );
+            } else {
+                nextSource = orbitals::gen::generateShader(
+                    shaderDir / "orbitals_template.frag",
+                    quantumN,
+                    quantumL,
+                    quantumM
+                );
+            }
 
 #ifdef DEBUG
             {
@@ -277,15 +297,40 @@ int main(int argc, char** argv) {
 
         bool dirtyQuantum = false;
         ImGui::Begin("Quantum Numbers");
-        dirtyQuantum |= ImGui::SliderInt("n", &quantumN, 1, 8);
+        
+        if (ImGui::Checkbox("Molecular Mode", &isMolecularMode)) {
+            dirtyQuantum = true;
+        }
+        
+        ImGui::Text("Orbital 1:");
+        dirtyQuantum |= ImGui::SliderInt("n##1", &quantumN, 1, 8);
 
         quantumL = std::clamp(quantumL, 0, quantumN - 1);
-        dirtyQuantum |= ImGui::SliderInt("l", &quantumL, 0, quantumN - 1);
+        dirtyQuantum |= ImGui::SliderInt("l##1", &quantumL, 0, quantumN - 1);
 
         quantumM = std::clamp(quantumM, -quantumL, quantumL);
-        dirtyQuantum |= ImGui::SliderInt("m", &quantumM, -quantumL, quantumL);
+        dirtyQuantum |= ImGui::SliderInt("m##1", &quantumM, -quantumL, quantumL);
 
         ImGui::Text("Current: n=%d, l=%d, m=%d", quantumN, quantumL, quantumM);
+        
+        if (isMolecularMode) {
+            ImGui::Separator();
+            ImGui::Text("Orbital 2:");
+            dirtyQuantum |= ImGui::SliderInt("n##2", &quantumN2, 1, 8);
+            
+            quantumL2 = std::clamp(quantumL2, 0, quantumN2 - 1);
+            dirtyQuantum |= ImGui::SliderInt("l##2", &quantumL2, 0, quantumN2 - 1);
+            
+            quantumM2 = std::clamp(quantumM2, -quantumL2, quantumL2);
+            dirtyQuantum |= ImGui::SliderInt("m##2", &quantumM2, -quantumL2, quantumL2);
+            
+            ImGui::Text("Current: n=%d, l=%d, m=%d", quantumN2, quantumL2, quantumM2);
+            
+            double distMin = 10.0;
+            double distMax = 75.0;
+            dirtyQuantum |= ImGui::SliderScalar("Distance##mol", ImGuiDataType_Double, &molecularDistance, &distMin, &distMax, "%.2f");
+        }
+        
         if (!lastShaderError.empty()) {
             ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", lastShaderError.c_str());
         }
