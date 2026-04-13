@@ -1,5 +1,14 @@
 # Orbitals
 
+## Preview
+
+![Orbitals 1](images/1.png)
+![Orbitals 2](images/2.png)
+![Orbitals 3](images/3.png)
+![Orbitals 4](images/4.png)
+
+Orbitals generates a fragment shader from quantum numbers, renders the result with OpenGL, and lets you rotate the view in a small ImGui-based UI.
+
 ## Requirements
 
 - CMake 3.20+

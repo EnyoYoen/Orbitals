@@ -6,3 +6,4 @@ build/
 *.VC.db
 *.VC.opendb
 shaders/orbitals_out.frag
+imgui.ini
