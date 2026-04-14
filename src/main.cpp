@@ -18,6 +18,13 @@
 
 bool gUiCapturesMouse = false;
 
+#ifdef _WIN32
+extern "C" {
+    __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
 enum class SimulationMode {
     Normal = 0,
     Molecular = 1,
@@ -172,6 +179,7 @@ int main(int argc, char** argv) {
     int quantumL2 = 2;
     int quantumM2 = 1;
     double molecularDistance = 10.0;
+    bool timedUseCurrentTemplate = false;
 
     auto generateFragmentSource = [&]() {
         if (simulationMode == SimulationMode::Molecular) {
@@ -187,6 +195,18 @@ int main(int argc, char** argv) {
             );
         }
         if (simulationMode == SimulationMode::Timed) {
+            if (timedUseCurrentTemplate) {
+                return orbitals::gen::generateTimeShader(
+                    shaderDir / "orbitals_current_template.frag",
+                    quantumN,
+                    quantumL,
+                    quantumM,
+                    quantumN2,
+                    quantumL2,
+                    quantumM2
+                );
+            }
+
             return orbitals::gen::generateTimeShader(
                 shaderDir / "orbitals_time_template.frag",
                 quantumN,
@@ -208,7 +228,7 @@ int main(int argc, char** argv) {
 
     std::string fragmentSource = generateFragmentSource();
 
-#ifndef DEBUG
+#ifdef DEBUG
     {
         std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);
         if (!generated) {
@@ -254,7 +274,7 @@ int main(int argc, char** argv) {
         try {
             std::string nextSource = generateFragmentSource();
 
-#ifndef DEBUG
+#ifdef DEBUG
             {
                 std::ofstream generated(shaderDir / "orbitals_out.frag", std::ios::out | std::ios::trunc);
                 if (generated) {
@@ -339,16 +359,23 @@ int main(int argc, char** argv) {
 
         if (simulationMode != SimulationMode::Normal) {
             ImGui::Separator();
-            ImGui::Text("Orbital 2:");
-            dirtyQuantum |= ImGui::SliderInt("n##2", &quantumN2, 1, 8);
+            if (simulationMode == SimulationMode::Molecular || simulationMode == SimulationMode::Timed) {
+                ImGui::Text("Orbital 2:");
+                dirtyQuantum |= ImGui::SliderInt("n##2", &quantumN2, 1, 8);
 
-            quantumL2 = std::clamp(quantumL2, 0, quantumN2 - 1);
-            dirtyQuantum |= ImGui::SliderInt("l##2", &quantumL2, 0, quantumN2 - 1);
+                quantumL2 = std::clamp(quantumL2, 0, quantumN2 - 1);
+                dirtyQuantum |= ImGui::SliderInt("l##2", &quantumL2, 0, quantumN2 - 1);
 
-            quantumM2 = std::clamp(quantumM2, -quantumL2, quantumL2);
-            dirtyQuantum |= ImGui::SliderInt("m##2", &quantumM2, -quantumL2, quantumL2);
+                quantumM2 = std::clamp(quantumM2, -quantumL2, quantumL2);
+                dirtyQuantum |= ImGui::SliderInt("m##2", &quantumM2, -quantumL2, quantumL2);
 
-            ImGui::Text("Current: n=%d, l=%d, m=%d", quantumN2, quantumL2, quantumM2);
+                ImGui::Text("Current: n=%d, l=%d, m=%d", quantumN2, quantumL2, quantumM2);
+            }
+            if (simulationMode == SimulationMode::Timed) {
+                if (ImGui::Checkbox("Show probability current", &timedUseCurrentTemplate)) {
+                    dirtyQuantum = true;
+                }
+            }
 
             if (simulationMode == SimulationMode::Molecular) {
                 double distMin = 10.0;
