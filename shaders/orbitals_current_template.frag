@@ -78,6 +78,36 @@ bool intersectBox(vec3 ro, vec3 rd, out float tmin, out float tmax)
     return tmax > max(tmin, 0.0);
 }
 
+vec3 integrateStreamline(vec3 start)
+{
+    vec3 p = start;
+    vec3 accum = vec3(0.0);
+
+    const int STEPS = 24;
+    const float STEP_SIZE = 0.5;
+
+    for(int i = 0; i < STEPS; i++)
+    {
+        vec3 j = current(p);
+        float speed = length(j);
+
+        if(speed < 1e-6) break;
+
+        vec3 dir = j / speed;
+
+        vec3 col = 0.5 + 0.5 * dir;
+        accum += col * 0.04;
+
+        p += dir * STEP_SIZE;
+
+        // stop if outside bounds
+        if(any(greaterThan(abs(p), bmax)))
+            break;
+    }
+
+    return accum;
+}
+
 vec4 raymarch(vec3 ro, vec3 rd) {
     float t0, t1;
     if(!intersectBox(ro, rd, t0, t1))
@@ -95,16 +125,14 @@ vec4 raymarch(vec3 ro, vec3 rd) {
     {
         vec3 p = ro + rd * t;
 
-        vec3 j = current(p);
-        float current = length(j);
-        float field = current;
-        field = log(1.0 + 2.0 * field);
+        vec3 flowColor = integrateStreamline(p);
+        float field = length(flowColor);
 
         float localAlpha = 1.0 - exp(-field * ATTENUATION * dt);
         //float localAlpha = density * 0.08;
         //localAlpha = clamp(localAlpha, 0.0, 0.2);
 
-        vec3 localColor = vec3(current * 10.0, 0.5 * current * 10.0, 1.0 - current * 10.0);
+        vec3 localColor = flowColor;
 
         color += (1.0 - alpha) * localAlpha * localColor;
         alpha += (1.0 - alpha) * localAlpha;
